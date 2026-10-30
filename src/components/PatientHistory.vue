@@ -1,7 +1,7 @@
 <template>
   <div class="space-y-4">
     <div class="bg-indigo-50 border-l-4 border-indigo-500 text-indigo-700 p-4 mt-4" role="alert">
-      <p class="font-bold mb-1">📋 Riwayat Diagnosa Pasien</p>
+      <p class="font-bold mb-1">📋 Riwayat Diagnosa User</p>
       <p class="text-sm">Di bawah ini adalah riwayat pengecekan gejala pasien yang pernah dilakukan oleh sistem AI. Data ini tersimpan di database lokal Anda.</p>
     </div>
 
