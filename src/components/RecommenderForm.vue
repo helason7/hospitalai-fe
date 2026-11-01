@@ -93,18 +93,43 @@
       </div>
 
       <!-- Kemungkinan Penyakit -->
-      <div v-if="result.possibility_of_illness && result.possibility_of_illness.length > 0" class="p-4 bg-red-50/70 border border-red-200 rounded-lg">
-        <h2 class="text-sm font-bold text-red-900 mb-2 flex items-center gap-1.5">
-          <span>🩺</span> Kemungkinan Penyakit (Possibility of Illness):
-        </h2>
-        <div class="flex flex-wrap gap-2">
-          <span
-            v-for="(illness, idx) in result.possibility_of_illness"
-            :key="idx"
-            class="bg-red-100 text-red-800 border border-red-200 text-xs font-semibold px-3 py-1 rounded-md"
-          >
-            {{ illness }}
+      <div v-if="normalizedIllnesses.length > 0" class="p-4 bg-red-50/70 border border-red-200 rounded-lg">
+        <h2 class="text-sm font-bold text-red-900 mb-3 flex items-center justify-between flex-wrap gap-1">
+          <span class="flex items-center gap-1.5">
+            <span>🩺</span> Kemungkinan Penyakit (Possibility of Illness):
           </span>
+          <span class="text-[11px] font-semibold text-red-700 bg-red-100 px-2 py-0.5 rounded border border-red-200">
+            Estimasi Kemungkinan
+          </span>
+        </h2>
+        <div class="space-y-2.5">
+          <div
+            v-for="(illness, idx) in normalizedIllnesses"
+            :key="idx"
+            class="bg-white p-3 rounded-lg border border-red-100 shadow-sm"
+          >
+            <div class="flex justify-between items-center mb-1.5">
+              <span class="font-semibold text-gray-800 text-sm">
+                {{ illness.name }}
+              </span>
+              <span
+                v-if="illness.percentage !== null"
+                :class="getPercentageBadgeClass(illness.percentage)"
+                class="text-xs font-bold px-2 py-0.5 rounded-full inline-flex items-center"
+              >
+                {{ illness.percentage }}%
+              </span>
+            </div>
+
+            <!-- Progress Bar -->
+            <div v-if="illness.percentage !== null" class="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
+              <div
+                class="h-2.5 rounded-full transition-all duration-500 ease-out"
+                :class="getProgressBarClass(illness.percentage)"
+                :style="{ width: `${Math.min(Math.max(illness.percentage, 0), 100)}%` }"
+              ></div>
+            </div>
+          </div>
         </div>
       </div>
 
@@ -205,6 +230,35 @@ const hasResults = computed(() => {
     (Array.isArray(result.value?.initial_handling) && result.value.initial_handling.length > 0)
   )
 })
+
+const normalizedIllnesses = computed(() => {
+  if (!Array.isArray(result.value?.possibility_of_illness)) return []
+  return result.value.possibility_of_illness.map(item => {
+    if (typeof item === 'string') {
+      return { name: item, percentage: null }
+    }
+    if (typeof item === 'object' && item !== null) {
+      const pct = typeof item.percentage === 'number' ? item.percentage : (item.percentage ? parseInt(item.percentage) : null)
+      return {
+        name: item.name || 'Penyakit Tidak Diketahui',
+        percentage: Number.isFinite(pct) ? pct : null
+      }
+    }
+    return { name: String(item), percentage: null }
+  })
+})
+
+const getProgressBarClass = (percentage) => {
+  if (percentage >= 70) return 'bg-red-500'
+  if (percentage >= 40) return 'bg-amber-500'
+  return 'bg-blue-500'
+}
+
+const getPercentageBadgeClass = (percentage) => {
+  if (percentage >= 70) return 'bg-red-100 text-red-700 border border-red-200'
+  if (percentage >= 40) return 'bg-amber-100 text-amber-700 border border-amber-200'
+  return 'bg-blue-100 text-blue-700 border border-blue-200'
+}
 
 const formatPages = (pages) => {
   if (!pages) return ''

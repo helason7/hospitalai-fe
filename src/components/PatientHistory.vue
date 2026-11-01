@@ -58,7 +58,7 @@
                 </div>
                 <div class="mb-1">
                   <span class="font-semibold text-red-600">Penyakit:</span> 
-                  {{ safeParse(h.possibility_of_illness).join(', ') || '-' }}
+                  {{ formatIllness(h.possibility_of_illness) }}
                 </div>
                 <div>
                   <span class="font-semibold text-green-600">Penanganan:</span> 
@@ -186,6 +186,21 @@ const safeParse = (jsonString) => {
   } catch (e) {
     return []
   }
+}
+
+const formatIllness = (jsonString) => {
+  const items = safeParse(jsonString)
+  if (!Array.isArray(items) || items.length === 0) return '-'
+  return items.map(item => {
+    if (typeof item === 'string') return item
+    if (typeof item === 'object' && item !== null) {
+      if (item.percentage !== undefined && item.percentage !== null) {
+        return `${item.name} (${item.percentage}%)`
+      }
+      return item.name || '-'
+    }
+    return String(item)
+  }).join(', ')
 }
 
 const formatDate = (isoString) => {
