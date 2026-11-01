@@ -61,48 +61,115 @@
     <button
       type="submit"
       :disabled="loading"
-      class="bg-blue-600 hover:bg-blue-700 text-white font-semibold w-full py-2 rounded-md transition"
+      class="bg-blue-600 hover:bg-blue-700 disabled:bg-blue-400 disabled:cursor-not-allowed text-white font-semibold w-full py-2.5 rounded-md transition flex items-center justify-center gap-2"
     >
-      {{ loading ? 'Analyzing...' : 'Get Recommendation' }}
+      <svg v-if="loading" class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8H4z"></path>
+      </svg>
+      <span>{{ loading ? 'Analyzing...' : 'Get Recommendation' }}</span>
     </button>
 
     <div v-if="error" class="text-red-500 mt-3 text-center">
       ⚠️ {{ error }}
     </div>
 
-    <div v-if="result.recommended_department" class="mt-4">
-      <h2 class="text-lg font-medium text-gray-700 mb-2">Departemen yg berhubungan (Recommended Department):</h2>
-      <ul class="list-disc list-inside text-blue-600">
-        <li v-for="dept in result.recommended_department" :key="dept">{{ dept }}</li>
-      </ul>
-    </div>
+    <!-- HASIL DIAGNOSA / REKOMENDASI -->
+    <div v-if="hasResults" class="mt-6 space-y-4 pt-5 border-t border-gray-200">
+      <!-- Departemen yang Direkomendasikan -->
+      <div v-if="result.recommended_department && result.recommended_department.length > 0" class="p-4 bg-blue-50/70 border border-blue-200 rounded-lg">
+        <h2 class="text-sm font-bold text-blue-900 mb-2 flex items-center gap-1.5">
+          <span>🏥</span> Departemen yg berhubungan (Recommended Department):
+        </h2>
+        <div class="flex flex-wrap gap-2">
+          <span
+            v-for="(dept, idx) in result.recommended_department"
+            :key="idx"
+            class="bg-blue-600 text-white text-xs font-semibold px-3 py-1.5 rounded-full shadow-sm"
+          >
+            {{ dept }}
+          </span>
+        </div>
+      </div>
 
-    <div v-if="result.possibility_of_illness" class="mt-4">
-      <h2 class="text-lg font-medium text-gray-700 mb-2">Kemungkinan Penyakit (Possibility of Illness):</h2>
-      <ul class="list-disc list-inside text-red-600">
-        <li v-for="illness in result.possibility_of_illness" :key="illness">{{ illness }}</li>
-      </ul>
-    </div>
+      <!-- Kemungkinan Penyakit -->
+      <div v-if="result.possibility_of_illness && result.possibility_of_illness.length > 0" class="p-4 bg-red-50/70 border border-red-200 rounded-lg">
+        <h2 class="text-sm font-bold text-red-900 mb-2 flex items-center gap-1.5">
+          <span>🩺</span> Kemungkinan Penyakit (Possibility of Illness):
+        </h2>
+        <div class="flex flex-wrap gap-2">
+          <span
+            v-for="(illness, idx) in result.possibility_of_illness"
+            :key="idx"
+            class="bg-red-100 text-red-800 border border-red-200 text-xs font-semibold px-3 py-1 rounded-md"
+          >
+            {{ illness }}
+          </span>
+        </div>
+      </div>
 
-    <div v-if="result.initial_handling" class="mt-4">
-      <h2 class="text-lg font-medium text-gray-700 mb-2">Rekomendasi Penanganan Awal (Initial Handling):</h2>
-      <ul class="list-disc list-inside text-green-600">
-        <li v-for="handling in result.initial_handling" :key="handling">{{ handling }}</li>
-      </ul>
-    </div>
+      <!-- Rekomendasi Penanganan Awal -->
+      <div v-if="result.initial_handling && result.initial_handling.length > 0" class="p-4 bg-emerald-50/70 border border-emerald-200 rounded-lg">
+        <h2 class="text-sm font-bold text-emerald-900 mb-2 flex items-center gap-1.5">
+          <span>💊</span> Rekomendasi Penanganan Awal (Initial Handling):
+        </h2>
+        <ol class="space-y-1.5 text-xs text-gray-800 list-decimal list-inside pl-1">
+          <li v-for="(handling, idx) in result.initial_handling" :key="idx" class="leading-relaxed">
+            <span class="font-medium text-gray-800">{{ handling }}</span>
+          </li>
+        </ol>
+      </div>
 
-    <div v-if="result.sources && result.sources.length > 0" class="mt-6 p-4 bg-gray-50 border rounded-md">
-      <h2 class="text-md font-bold text-gray-700 mb-2">📚 Sumber Referensi (Sources):</h2>
-      <ul class="list-disc list-inside text-gray-600 text-sm">
-        <li v-for="(src, idx) in result.sources" :key="idx" class="mb-1">
-          {{ src.document_name }}
-          <a v-if="src.document_url" :href="src.document_url" target="_blank" class="text-blue-500 hover:underline ml-1 text-xs">[Lihat Dokumen]</a>
-        </li>
-      </ul>
+      <!-- Sumber Referensi Medis -->
+      <div v-if="result.sources && result.sources.length > 0" class="p-4 bg-gray-50 border border-gray-200 rounded-lg">
+        <h2 class="text-sm font-bold text-gray-800 mb-3 flex items-center gap-1.5">
+          <span>📚</span> Sumber Referensi (Sources):
+        </h2>
+        <ul class="space-y-2.5">
+          <li
+            v-for="(src, idx) in result.sources"
+            :key="idx"
+            class="p-3 bg-white border border-gray-200 rounded-md text-xs shadow-sm hover:border-gray-300 transition"
+          >
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+              <span class="font-medium text-gray-800 flex-1 leading-snug">
+                {{ typeof src === 'string' ? src : src.document_name }}
+              </span>
+
+              <div class="flex items-center gap-2 shrink-0 flex-wrap">
+                <!-- Halaman Referensi -->
+                <span
+                  v-if="src.pages && src.pages.length > 0"
+                  class="bg-indigo-50 text-indigo-700 border border-indigo-200 font-semibold px-2 py-0.5 rounded text-[11px] inline-flex items-center gap-1"
+                >
+                  <span>📄</span> Hal. {{ formatPages(src.pages) }}
+                </span>
+
+                <!-- Link Dokumen -->
+                <a
+                  v-if="src.document_url"
+                  :href="getDocumentUrl(src)"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  class="text-blue-600 hover:text-blue-800 hover:underline font-medium inline-flex items-center gap-0.5 text-[11px]"
+                >
+                  <span>[Lihat Dokumen]</span>
+                  <span class="text-[10px]">↗</span>
+                </a>
+              </div>
+            </div>
+          </li>
+        </ul>
+      </div>
+
+      <div v-else class="p-3 bg-amber-50 border border-amber-200 text-amber-800 rounded-lg text-xs flex items-center gap-2">
+        <span>ℹ️</span>
+        <span>Rekomendasi di atas berdasarkan analisis medis umum AI (tidak ada dokumen PNPK spesifik yang cocok).</span>
+      </div>
     </div>
 
     <!-- TAUTAN KE SURVEY -->
-    <div v-if="result.recommended_department" class="mt-8 pt-6 border-t border-gray-200 text-center">
+    <div v-if="hasResults" class="mt-8 pt-6 border-t border-gray-200 text-center">
       <p class="text-sm text-gray-600 mb-3">Apakah hasil diagnosa ini membantu Anda? Berikan kami masukan!</p>
       <button 
         type="button"
@@ -117,7 +184,7 @@
 
 <script setup>
 import axios from 'axios'
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 
 const emit = defineEmits(['go-to-survey'])
 
@@ -130,6 +197,35 @@ const symptomInput = ref('')
 const result = ref({})
 const loading = ref(false)
 const error = ref('')
+
+const hasResults = computed(() => {
+  return (
+    (Array.isArray(result.value?.recommended_department) && result.value.recommended_department.length > 0) ||
+    (Array.isArray(result.value?.possibility_of_illness) && result.value.possibility_of_illness.length > 0) ||
+    (Array.isArray(result.value?.initial_handling) && result.value.initial_handling.length > 0)
+  )
+})
+
+const formatPages = (pages) => {
+  if (!pages) return ''
+  if (Array.isArray(pages)) {
+    return pages.join(', ')
+  }
+  return String(pages)
+}
+
+const getDocumentUrl = (src) => {
+  if (!src || !src.document_url) return '#'
+  if (
+    Array.isArray(src.pages) &&
+    src.pages.length > 0 &&
+    src.document_url.toLowerCase().endsWith('.pdf') &&
+    !src.document_url.includes('#page=')
+  ) {
+    return `${src.document_url}#page=${src.pages[0]}`
+  }
+  return src.document_url
+}
 
 const addSymptom = () => {
   if (symptomInput.value.trim() && !form.value.symptoms.includes(symptomInput.value)) {
